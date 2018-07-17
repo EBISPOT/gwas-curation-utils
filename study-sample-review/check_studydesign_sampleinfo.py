@@ -212,7 +212,7 @@ def get_curation_review_data(pmid, ancestry_mode, curator):
                     data_results['CATALOG_PUBLISH_DATE'] = data[9]
 
     
-                if data[9] is None:
+                if data[10] is None:
                     data_results['INITIAL_SAMPLE_DESCRIPTION'] = 'None'
                 else:
                     data_results['INITIAL_SAMPLE_DESCRIPTION'] = data[10]
