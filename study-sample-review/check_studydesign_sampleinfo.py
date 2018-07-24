@@ -87,7 +87,7 @@ def get_curation_review_data(pmid, ancestry_mode, curator):
 
     # Queries for Expanded Ancestry Option
     expanded_ancestry_sql = """
-        SELECT A.ID, A.TYPE, A.NUMBER_OF_INDIVIDUALS, A.NOTES
+        SELECT A.ID, A.TYPE, A.NUMBER_OF_INDIVIDUALS, A.DESCRIPTION
         FROM STUDY S, ANCESTRY A
         WHERE A.STUDY_ID=S.ID
           and S.ID= :study_id 
