@@ -25,7 +25,7 @@ def get_curation_queue_data():
     curation_queue_data_sql = """
         SELECT DISTINCT (S.ID) AS STUDY_ID, TO_CHAR(H.STUDY_ADDED_DATE, 'yyyy-mm-dd'), P.PUBMED_ID, 
         A.FULLNAME, TO_CHAR(P.PUBLICATION_DATE, 'yyyy-mm-dd') AS Publication_Date, P.PUBLICATION, 
-        P.TITLE, S.USER_REQUESTED, S.FULL_PVALUE_SET, CS.STATUS
+        P.TITLE, S.USER_REQUESTED, S.FULL_PVALUE_SET, CS.STATUS, S.OPEN_TARGETS
         FROM STUDY S, HOUSEKEEPING H, PUBLICATION P, AUTHOR A, CURATION_STATUS CS
         WHERE S.HOUSEKEEPING_ID = H.ID AND H.IS_PUBLISHED = 0
           and S.PUBLICATION_ID=P.ID and P.FIRST_AUTHOR_ID=A.ID and H.CURATION_STATUS_ID=CS.ID
@@ -80,7 +80,7 @@ def get_curation_queue_data():
     curation_queue_attr_list = ['STUDY_ID', 'STUDY_CREATION_DATE', 'PUBMEDID', 'FIRST_AUTHOR', \
         'PUBLICATION_DATE', 'JOURNAL', 'TITLE', 'REPORTED_TRAIT', 'EFO_TRAIT', \
         'ASSOCIATION_COUNT', 'NUMBER_OF_INDIVIDUALS_INITIAL', 'NUMBER_OF_INDIVIDUALS_REPLICATION', \
-        'USER REQUESTED?', 'FULL P-VALUE SET?', 'CURATION_STATUS']
+        'USER_REQUESTED?', 'FULL P-VALUE SET?', 'CURATION_STATUS', 'IS_OPEN_TARGETS?']
 
     
     TIMESTAMP = get_timestamp()
@@ -127,6 +127,8 @@ def get_curation_queue_data():
                 curation_data.insert(13, data[8])
 
                 curation_data.insert(14, data[9])
+
+                curation_data.insert(15, data[10])
 
 
 
@@ -223,8 +225,8 @@ if __name__ == '__main__':
 
     # Commandline arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('--database', default='DEV3', choices=['DEV3', 'SPOTPRO'], 
-                        help='Run as (default: DEV3).')
+    parser.add_argument('--database', default='SPOTPRO', choices=['DEV3', 'SPOTPRO'], 
+                        help='Run as (default: SPOTPRO).')
     args = parser.parse_args()
 
     global DATABASE_NAME
