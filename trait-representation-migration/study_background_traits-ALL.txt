@@ -151,7 +151,7 @@ Major coronary event in cardiovascular disease (time to event) (darapladib treat
 Major coronary event in placebo-treated cardiovascular disease (time to event)	acute coronary syndrome|| coronary heart disease|| cardiovascular event measurement|| response to placebo	GCST004961	cardiovascular event measurement|| response to placebo	acute coronary syndrome|| coronary heart disease
 Cataracts in type 2 diabetes	cataract|| type II diabetes mellitus	GCST001736	cataract	type II diabetes mellitus
 Caudate volume in trauma-exposed individuals	response to trauma exposure|| caudate nucleus volume	GCST005240	caudate nucleus volume|| response to trauma exposure	
-Cerebral amyloid deposition in APOEe4 carriers (PET imaging)	APOE carrier status|| cerebral amyloid deposition measurement	GCST003076	cerebral amyloid deposition measurement	APO carrier status
+Cerebral amyloid deposition in APOEe4 carriers (PET imaging)	APOE carrier status|| cerebral amyloid deposition measurement	GCST003076	cerebral amyloid deposition measurement	APOE carrier status
 Cerebrospinal fluid clusterin levels in APOEe4+ carriers	APOE carrier status|| cerebrospinal fluid clusterin measurement	GCST003131	cerebrospinal fluid clusterin measurement	APOE carrier status
 Chagas cardiomyopathy in Tripanosoma cruzi seropositivity	Chagas cardiomyopathy|| Trypanosoma cruzi seropositivity	GCST002285	Chagas cardiomyopathy	Trypanosoma cruzi seropositivity
 Cholangiocarcinoma in primary sclerosing cholangitis	cholangiocarcinoma|| sclerosing cholangitis	GCST005855	cholangiocarcinoma	sclerosing cholangitis
