@@ -1,6 +1,6 @@
 # Activate Python venv for the script - uncomment to run script on commandline
-activate_this_file = "/path/to/bin/activate_this.py"
-execfile(activate_this_file, dict(__file__ = activate_this_file))
+# activate_this_file = "/path/to/bin/activate_this.py"
+# execfile(activate_this_file, dict(__file__ = activate_this_file))
 
 import cx_Oracle
 import contextlib
@@ -24,37 +24,54 @@ def read_file(filename):
         filename: Name of file provided as a commandline argument.
 
     Returns:
-        data: File object.
+        data_map: Dictionary with the STUDY_ID as the key and a 
+        list of EFO_IDs as the dictionary value.
     '''
-    data = []
 
     with open(filename, 'r') as file:
         lines = file.readlines()[1:]
 
-        for line in lines:
-            formatted_line = line.split('\t')
+    return lines
 
-            study_accession = formatted_line[2].strip()
 
-            background_column = formatted_line[4].strip()
+def process_file_contents(file_data, efo_map, cursor):
+    '''
+    Extract fields of interest from the file and clean-up values.
 
-            delimiter = '||'
+    Args:
+        file_data: Contents of the file.
+    '''
 
-            if not background_column == '':
-                study_traits = {}
-                if delimiter in background_column:
-                    background_column = background_column.split(delimiter)
-                    background_traits = [item.strip().lower() for item in background_column]
-                else:
-                    background_traits = background_column.strip().lower() 
-     
-                study_traits[study_accession] = background_traits
-                data.append(study_traits)
+    count = 0
+
+    for line in file_data:
+        formatted_line = line.split('\t')
+
+        study_accession = formatted_line[2].strip()
+        study_id = _get_study_id(study_accession)
+
+        background_column = formatted_line[4].strip()
+
+        delimiter = '||'
+
+        if not background_column == '':
+            count += 1
+            # print('\nCount: {} StudyID: {} Accession: {}'.format(count, study_id, study_accession))
+            
+            if delimiter in background_column:
+                background_column = background_column.split(delimiter)
+
+                for background_trait in background_column:
+                    # Get the EFO_ID
+                    background_trait_id = efo_map[background_trait.strip().lower()]
+                    # print('TID: {}'.format(background_trait_id))
+                    _execute_delete_query(cursor, study_id, background_trait_id)
             else:
-                pass
-
-    return data
-
+                # Get the EFO_ID
+                background_trait_id = efo_map[background_column.strip().lower()]
+                # print('TID: {}'.format(background_trait_id))
+                _execute_delete_query(cursor, study_id, background_trait_id)
+ 
 
 def database_connection(DATABASE_NAME):
     '''
@@ -77,7 +94,7 @@ def database_connection(DATABASE_NAME):
 
         cursor = connection.cursor()
 
-        return cursor
+        return connection, cursor
 
     except cx_Oracle.DatabaseError, exception:
         print exception
@@ -88,7 +105,7 @@ def get_efo_id_map(cursor):
     Get mapping of term labels to EFO IDs. 
 
     Args: 
-        cursor: Database cursor object.
+        cursor (object): Database cursor object.
 
 
     Returns:
@@ -105,14 +122,39 @@ def get_efo_id_map(cursor):
     efo_data = cursor.fetchall()
 
     for row in tqdm(efo_data, desc='Build EFO map'):
-        efo_map[row[0]] = row[1] 
+        # Key is Trait, Value is ID
+        efo_map[row[1]] = row[0]
 
     return efo_map
 
 
-def _execute_query(cursor, query):
+def _get_study_id(accession):
     '''
-    Run the query.
+    Query the STUDY table with the accession to get the Study ID.
+    
+    Args: 
+        accession (str): study accession parsed from input file
+
+    Returns:
+        study_id (int): STUDY.ID, the primary key for the row with the study accession.
+    '''
+
+    study_sql = '''
+        SELECT ID
+        FROM STUDY
+        WHERE ACCESSION_ID = '{}'
+    '''.format(accession)
+
+    cursor.execute(study_sql)
+    study_id = cursor.fetchone()
+
+    return study_id[0]
+
+
+
+def _execute_delete_query(cursor, study_id, efo_trait_id):
+    '''
+    Delete row from STUDY_EFO_TRAIT table.
 
     Args: 
         query (str): The query to run.
@@ -120,14 +162,18 @@ def _execute_query(cursor, query):
     Raises:
     '''
 
-    cursor.execute(query)
+    study_efo_trait_delete_sql = '''
+        DELETE FROM STUDY_EFO_TRAIT
+        WHERE STUDY_ID = '{}' AND EFO_TRAIT_ID = '{}'
+    '''.format(study_id, efo_trait_id)
+
+    cursor.execute(study_efo_trait_delete_sql)
 
     # commit or rollback changes
-    # if args.mode == 'production':
-    #     cursor.execute('COMMIT')
-    # else:
-    #     cursor.execute('ROLLBACK')
-    pass
+    if args.mode == 'production':
+        cursor.execute('COMMIT')
+    else:
+        cursor.execute('ROLLBACK')
 
 
 if __name__ == '__main__':
@@ -148,13 +194,20 @@ if __name__ == '__main__':
     global DATABASE_NAME
     DATABASE_NAME = args.database
 
-    read_file(args.filename)
-
-    # cursor = database_connection()
+    # Get database connection
+    conn, cursor = database_connection(args.database)
     
-    # get_efo_id_map(cursor)
+    # Create map of Trait labels and EFO_IDs
+    efo_map = get_efo_id_map(cursor)
 
-    # remove_study_efo_trait_links()
-    
+    # Read data file
+    data = read_file(args.filename)
+
+    # Format column values and remove STUDY_EFO_TRAIT link
+    process_file_contents(data, efo_map, cursor)
+
+    # Close database connection
+    conn.close()
+
 
 
