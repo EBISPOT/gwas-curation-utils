@@ -15,6 +15,12 @@ import gwas_data_sources
 
 import datetime
 
+import smtplib
+from os.path import basename
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
+
 
 def get_curation_queue_data():
     '''
@@ -218,9 +224,49 @@ def get_timestamp():
     return timestamp
 
 
+def send_email(*args):
+    '''
+    Email report file.
+    '''
+    
+    # Today's date
+    now = datetime.datetime.now()
+    datestamp = str(now.day)+"_"+str(now.strftime("%b"))+"_"+str(now.year)
+
+    file_name = args[0]
+
+    with open(file_name, "rb") as fil:
+        part = MIMEApplication(
+            fil.read(),
+            Name=basename(file_name)
+        )
+    
+    # create a text/plain message
+    msg = MIMEMultipart()
+
+    # After the file is closed
+    part['Content-Disposition'] = 'attachment; filename="%s"' % basename(file_name)
+    msg.attach(part)
+
+
+    # create headers
+    me = 'spotbot@ebi.ac.uk'
+    # you = ['gwas-dev-logs@ebi.ac.uk', 'gwas-curator@ebi.ac.uk']
+    you = ['twhetzel@ebi.ac.uk']
+    msg['Subject'] = 'GWAS Curation Queue '+datestamp
+    msg['From'] = me
+    msg['To'] = ", ".join(you)
+
+    # send the message via our own SMTP server, but don't include the
+    # envelope header
+    s = smtplib.SMTP('localhost')
+    s.sendmail(me, you, msg.as_string())
+    s.quit()
+
+
 if __name__ == '__main__':
     '''
-    Create Solr documents for categories of interest.
+    Create curation metrics.
     '''
 
     # Commandline arguments
@@ -234,5 +280,8 @@ if __name__ == '__main__':
 
     curation_queue_data = get_curation_queue_data()
     
-
+    # Email data to curators
+    TIMESTAMP = get_timestamp()
+    report_filename = "data_queue_"+TIMESTAMP+".csv"
+    send_email(report_filename)
 
