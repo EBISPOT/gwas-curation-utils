@@ -251,8 +251,8 @@ def send_email(*args):
 
     # create headers
     me = 'spotbot@ebi.ac.uk'
-    # you = ['gwas-dev-logs@ebi.ac.uk', 'gwas-curator@ebi.ac.uk']
-    you = ['twhetzel@ebi.ac.uk']
+    you = ['gwas-dev-logs@ebi.ac.uk', 'gwas-curator@ebi.ac.uk']
+    # you = ['twhetzel@ebi.ac.uk']
     msg['Subject'] = 'GWAS Curation Queue '+datestamp
     msg['From'] = me
     msg['To'] = ", ".join(you)
