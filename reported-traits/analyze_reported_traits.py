@@ -63,27 +63,52 @@ class ReportedTraitData:
         return date.today().strftime('%d-%m-%Y')
 
 
+    def read_reported_trait_file(self):
+        print('\nWhat file do you want to analyze?')
+        user_filename = input().strip()
+        
+        with open(user_filename, 'r') as input_file:
+            traits = [trait.strip() for trait in input_file]
+            return traits
+
+
 if __name__ == '__main__':
 
     # Parsing command line arguments:
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--action', type=str, help='Task to preform, e.g. dump, analyze, upload')
+    parser.add_argument('--action', type=str, help='Task to preform, e.g. dump, analyze, upload')
     parser.add_argument('--curation_db', type=str, help='Name of the database for extracting study data.')
     # parser.add_argument('--logging_level', type=str, default='logging.INFO', help='Name of the database for extracting study data.')
     args = parser.parse_args()
 
     database = args.curation_db
+    action = args.action
     # logging_level = args.logging_level
 
     # Open connection:
     db_object = DBConnection.gwasCatalogDbConnector(database)
     connection = db_object.connection
 
-    # Get published studies from database
-    all_reported_traits_obj = ReportedTraitData(connection, database)
+    
+    # Create file of all Reported Traits
+    if action == 'dump':
+        # Get published studies from database
+        all_reported_traits_obj = ReportedTraitData(connection, database)
 
-    # Write to file
-    all_reported_traits_obj.save_file()
+        # Write to file
+        all_reported_traits_obj.save_file()
+
+    if action == 'analyze':
+        # Get published studies from database
+        all_reported_traits_obj = ReportedTraitData(connection, database)
+
+        # Read file of traits 
+        traits_to_analyze = all_reported_traits_obj.read_reported_trait_file()
+        print(traits_to_analyze)
+
+        # all_reported_traits_obj.find_similar_reported_traits(traits_to_analyze)
+        # TODO: Read in Excel and/or text file, find top 5 matches from an existing trait, write out similarity file
+
 
 
  
