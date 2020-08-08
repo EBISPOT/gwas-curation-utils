@@ -11,6 +11,14 @@ from tqdm import tqdm
 from datetime import datetime, date
 from gwas_db_connect import DBConnection
 
+import Levenshtein
+
+# import string
+# from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.feature_extraction.text import CountVectorization. #issue installing this
+# from nltk.corpus import stopwords
+# stopwords = stopwords.words('english')
+
 
 class ReportedTraitData:
 
@@ -64,12 +72,31 @@ class ReportedTraitData:
 
 
     def read_reported_trait_file(self):
+        ''' Read in text file '''
         print('\nWhat file do you want to analyze?')
         user_filename = input().strip()
         
         with open(user_filename, 'r') as input_file:
             traits = [trait.strip() for trait in input_file]
             return traits
+
+
+    def find_similar_reported_traits(self, user_trait_data):
+        ''' Find similar traits '''
+        logging.info('Searching for similarities...')
+        traits = [''.join(trait[1]) for trait in self.data]
+        
+        similarities = {}
+        for user_trait in user_trait_data:
+            print('\nLooking for similar terms for: ', user_trait)
+            matches_above_threshold = {}
+            for db_reported_trait in traits:
+                similarity_score = Levenshtein.ratio(user_trait, db_reported_trait)
+                if similarity_score >= 0.7:
+                    matches_above_threshold[db_reported_trait] = similarity_score
+
+            matches = sorted(matches_above_threshold.items(), key=lambda x: x[1], reverse=True)
+            print(matches[:5])
 
 
 if __name__ == '__main__':
@@ -98,15 +125,17 @@ if __name__ == '__main__':
         # Write to file
         all_reported_traits_obj.save_file()
 
+
+    # Analyze list of reported traits
     if action == 'analyze':
         # Get published studies from database
         all_reported_traits_obj = ReportedTraitData(connection, database)
 
         # Read file of traits 
         traits_to_analyze = all_reported_traits_obj.read_reported_trait_file()
-        print(traits_to_analyze)
+        # print(traits_to_analyze)
 
-        # all_reported_traits_obj.find_similar_reported_traits(traits_to_analyze)
+        all_reported_traits_obj.find_similar_reported_traits(traits_to_analyze)
         # TODO: Read in Excel and/or text file, find top 5 matches from an existing trait, write out similarity file
 
 
