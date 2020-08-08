@@ -42,14 +42,14 @@ class ReportedTraitData:
                 cursor.execute(self.ALL_REPORTED_TRAITS_SQL)
                 data = cursor.fetchall()
                 self.data = data
-                # self.data = data[:20]
+
                 logging.debug('Successfully extracted reported traits')
 
         except(cx_Oracle.DatabaseError, exception):
             print(exception)
 
 
-    def save_file(self):
+    def save_all_reported_traits_file(self):
         ''' Write reported traits to file '''
         traits = [''.join(trait[1]) for trait in self.data]
         traits.sort()
@@ -82,28 +82,56 @@ class ReportedTraitData:
 
 
     def find_similar_reported_traits(self, user_trait_data):
-        ''' Find similar traits '''
+        ''' Find similar traits 
+        
+        Args:
+            user_trait_data: list of tuples (id, trait)
+        '''
         logging.info('Searching for similarities...')
         traits = [''.join(trait[1]) for trait in self.data]
         
         similarities = {}
-        for user_trait in user_trait_data:
-            print('\nLooking for similar terms for: ', user_trait)
+        for user_trait in tqdm(user_trait_data, desc="Traits"):
             matches_above_threshold = {}
             for db_reported_trait in traits:
-                similarity_score = Levenshtein.ratio(user_trait, db_reported_trait)
+                similarity_score = Levenshtein.ratio(user_trait.lower(), db_reported_trait.lower())
                 if similarity_score >= 0.7:
-                    matches_above_threshold[db_reported_trait] = similarity_score
+                    matches_above_threshold[db_reported_trait] = "{:.2f}".format(similarity_score)
 
+            # Sort list of tuples by score return list with tuple with highest score first in list
             matches = sorted(matches_above_threshold.items(), key=lambda x: x[1], reverse=True)
-            print(matches[:5])
+
+            similarities[user_trait] = matches
+
+        return similarities
+
+
+    def save_all_similarities_file(self, results):
+        ''' Save results of similarity analysis 
+
+        Args:
+            results: dictionary of similarity results, key is user suppllied term, 
+            the value is a list of similarity result tuples
+
+            Example: {'test 1': [], 'heart attack': [('Heart rate', 0.7272727272727273)]}
+        '''
+        with open("similarity_analysis_results.csv", "w") as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['Reported Trait', 'Similarity results'])
+
+            for trait, similarity_results in results.items():
+                # similarity_results format --> [('CD11c+ HLA DR++ monocyte %monocyte', 1.0), ('HLA DR++ monocyte %monocyte', 0.8852459016393442)]
+                result_matches = " || ".join("%s -- %s" % tup for tup in similarity_results)                
+                writer.writerow([trait, result_matches])
+
+            logging.info('similarity_analysis_results.csv created')
 
 
 if __name__ == '__main__':
 
     # Parsing command line arguments:
     parser = argparse.ArgumentParser()
-    parser.add_argument('--action', type=str, help='Task to preform, e.g. dump, analyze, upload')
+    parser.add_argument('--action', type=str, help='Task to perform, e.g. dump, analyze, upload')
     parser.add_argument('--curation_db', type=str, help='Name of the database for extracting study data.')
     # parser.add_argument('--logging_level', type=str, default='logging.INFO', help='Name of the database for extracting study data.')
     args = parser.parse_args()
@@ -123,7 +151,7 @@ if __name__ == '__main__':
         all_reported_traits_obj = ReportedTraitData(connection, database)
 
         # Write to file
-        all_reported_traits_obj.save_file()
+        all_reported_traits_obj.save_all_reported_traits_file()
 
 
     # Analyze list of reported traits
@@ -135,8 +163,10 @@ if __name__ == '__main__':
         traits_to_analyze = all_reported_traits_obj.read_reported_trait_file()
         # print(traits_to_analyze)
 
-        all_reported_traits_obj.find_similar_reported_traits(traits_to_analyze)
-        # TODO: Read in Excel and/or text file, find top 5 matches from an existing trait, write out similarity file
+        similarity_results = all_reported_traits_obj.find_similar_reported_traits(traits_to_analyze)
+        # print(similarity_results)
+        
+        all_reported_traits_obj.save_all_similarities_file(similarity_results)
 
 
 
