@@ -77,6 +77,8 @@ class ReportedTraitData:
         user_filename = input().strip()
         
         with open(user_filename, 'r') as input_file:
+            # TODO: Check that file has only one column of data 
+            # decide whether to fail if more columns are found
             traits = [trait.strip() for trait in input_file]
             return traits
 
@@ -126,6 +128,11 @@ class ReportedTraitData:
 
             logging.info('similarity_analysis_results.csv created')
 
+    
+    def insert_traits(self, traits):
+        ''' '''
+        print(traits)
+
 
 if __name__ == '__main__':
 
@@ -147,6 +154,7 @@ if __name__ == '__main__':
     
     # Create file of all Reported Traits
     if action == 'dump':
+        # TODO: Change this class to separate out class data from database connection object
         # Get published studies from database
         all_reported_traits_obj = ReportedTraitData(connection, database)
 
@@ -156,6 +164,7 @@ if __name__ == '__main__':
 
     # Analyze list of reported traits
     if action == 'analyze':
+        # TODO: Change this class to separate out class data from database connection object
         # Get published studies from database
         all_reported_traits_obj = ReportedTraitData(connection, database)
 
@@ -169,5 +178,16 @@ if __name__ == '__main__':
         all_reported_traits_obj.save_all_similarities_file(similarity_results)
 
 
+    # Add Reported traits to the database
+    if action == 'upload':
+        # TODO: Change this class to separate out class data from database connection object
+        # Get published studies from database
+        all_reported_traits_obj = ReportedTraitData(connection, database)
 
- 
+        # Read file of traits 
+        traits_to_analyze = all_reported_traits_obj.read_reported_trait_file()
+
+        # Insert traits into the database
+        all_reported_traits_obj.insert_traits(traits_to_analyze)
+
+
