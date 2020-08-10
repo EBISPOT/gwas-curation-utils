@@ -93,13 +93,20 @@ class ReportedTraitData:
         similarities = {}
         for user_trait in tqdm(user_trait_data, desc="Traits"):
             matches_above_threshold = {}
+            is_match_found = False
             for db_reported_trait in traits:
                 similarity_score = Levenshtein.ratio(user_trait.lower(), db_reported_trait.lower())
 
+                if similarity_score >= match_threshold_value:
                 # if similarity_score >= 0.7:
-                if similarity_score >= match_threshold_value: 
-                    matches_above_threshold[db_reported_trait] = "{:.2f}".format(similarity_score)
+                    is_match_found = True
+                    matches_above_threshold[db_reported_trait] = '{:.2f}'.format(similarity_score)
+            
+            # Set default value if no matches are found to display in "similarity_analysis_results.csv"
+            if not is_match_found:
+                 matches_above_threshold[db_reported_trait] = 'No matches found at threshold: ' + str(match_threshold_value)
 
+            
             # Sort list of tuples by score return list with tuple with highest score first in list
             matches = sorted(matches_above_threshold.items(), key=lambda x: x[1], reverse=True)
 
