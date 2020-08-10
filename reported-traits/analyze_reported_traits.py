@@ -68,10 +68,17 @@ class ReportedTraitData:
         print('\nWhat file do you want to ' + action + '?')
         user_filename = input().strip()
 
-        with open(user_filename, 'r') as input_file:
-            # TODO: Check that file has only one column of data
-            # decide whether to fail if more columns are found
-            traits = [line.strip() for line in input_file if line.strip()]
+        with open(user_filename, 'r') as input_file:            
+            traits = []
+            for line in input_file:
+                if line.strip():
+                    columns = line.split('\t')
+                    
+                    if len(columns) == 1:
+                        traits.append(line.strip())
+                    else:
+                        logging.warning('Exiting... Line found with more than 1 column: '+str(line))
+                        sys.exit()
             return traits
 
     def find_similar_reported_traits(self, user_trait_data):
@@ -104,7 +111,7 @@ class ReportedTraitData:
             
             # Set default value if no matches are found to display in "similarity_analysis_results.csv"
             if not is_match_found:
-                 matches_above_threshold[db_reported_trait] = 'No matches found at threshold: ' + str(match_threshold_value)
+                 matches_above_threshold['No matches found at threshold'] = str(match_threshold_value)
 
             
             # Sort list of tuples by score return list with tuple with highest score first in list
