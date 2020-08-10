@@ -121,6 +121,9 @@ class ReportedTraitData:
         ''' Add traits to the database '''
         logging.info('All traits to add: '+', '.join(traits))
 
+        # print('Are you sure you want to add these traits? Options: yes, no, testing')
+        # confirm_action = input().strip()
+
         existing_traits = [''.join(trait[1]) for trait in self.data]
         traits_to_add = []
 
@@ -152,7 +155,7 @@ class ReportedTraitData:
                         logging.info('Successfully added trait: ' + "'"+ trait +"'" + ' with PK: ' + str(disease_trait_id))
 
                         # TODO: Add flag to test upload or commit
-                        cursor.execute('COMMIT')
+                        cursor.execute('ROLLBACK')
                 except cx_Oracle.DatabaseError as exception:
                     logging.error(exception)
 
