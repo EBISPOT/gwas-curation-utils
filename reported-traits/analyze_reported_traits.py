@@ -80,6 +80,13 @@ class ReportedTraitData:
         Args:
             user_trait_data: list of tuples (id, trait)
         '''
+        print('Enter the match threshold value (upper=1.0, lower=0). A match score of 1.0 is a perfect match.')
+        match_threshold_value = float(input())
+
+        if match_threshold_value > 1 or match_threshold_value  < 0:
+            logging.warning('Exiting... Match threshold outside of accepted limit')
+            sys.exit()
+
         logging.info('Searching for similarities...')
         traits = [''.join(trait[1]) for trait in self.data]
 
@@ -89,7 +96,8 @@ class ReportedTraitData:
             for db_reported_trait in traits:
                 similarity_score = Levenshtein.ratio(user_trait.lower(), db_reported_trait.lower())
 
-                if similarity_score >= 0.7:
+                # if similarity_score >= 0.7:
+                if similarity_score >= match_threshold_value: 
                     matches_above_threshold[db_reported_trait] = "{:.2f}".format(similarity_score)
 
             # Sort list of tuples by score return list with tuple with highest score first in list
