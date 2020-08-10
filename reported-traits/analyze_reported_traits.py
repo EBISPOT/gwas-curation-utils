@@ -8,9 +8,11 @@ import json
 import csv
 import logging
 from tqdm import tqdm
+from termcolor import colored
 from datetime import datetime, date
 from gwas_db_connect import DBConnection
 import Levenshtein
+
 
 
 class ReportedTraitData:
@@ -33,6 +35,7 @@ class ReportedTraitData:
             with contextlib.closing(connection.cursor()) as cursor:
                 cursor.execute(self.ALL_REPORTED_TRAITS_SQL)
                 data = cursor.fetchall()
+                #TODO: Decide whether to keep id and trait name
                 self.data = data
                 logging.debug('Successfully extracted reported traits')
         except cx_Oracle.DatabaseError as exception:
@@ -121,10 +124,21 @@ class ReportedTraitData:
         ''' Add traits to the database '''
         logging.info('All traits to add: '+', '.join(traits))
 
-        # print('Are you sure you want to add these traits? Options: yes, no, testing')
-        # confirm_action = input().strip()
+        print(colored('Are you sure you want to add these traits to the Curation app production database? Options: yes, no', 'red', attrs=['bold']))
+        confirm_action = input().strip().lower() or 'no' # leave a default for safety
 
-        existing_traits = [''.join(trait[1]) for trait in self.data]
+        if confirm_action == 'no':
+            logging.warning('Exiting... no confirmation to upload traits')
+            sys.exit()
+        elif confirm_action == 'testing':
+            database_action = 'ROLLBACK'
+        elif confirm_action == 'yes':
+            database_action = 'COMMIT'
+        else:
+            logging.warning('Exiting... Confirmation did not match any of the expected values')
+            sys.exit()
+
+        existing_traits = [''.join(trait[1].strip()) for trait in self.data]
         traits_to_add = []
 
         # Check if any traits to be added currently exist in the database
@@ -135,12 +149,8 @@ class ReportedTraitData:
             else:
                 traits_to_add.append(trait)
                 insert_trait_sql = 'INSERT INTO DISEASE_TRAIT VALUES (NULL, ' + "'"+trait+"'" + ')'
-                print('\n')
-                logging.info(insert_trait_sql)
-
-                # Execute insert statements
-                # if args.mode == 'production':
-                    # _execute_statement(trait, insert_trait_sql)
+                # print('\n')
+                # logging.info(insert_trait_sql)
 
                 try:
                     with contextlib.closing(connection.cursor()) as cursor:
@@ -154,8 +164,9 @@ class ReportedTraitData:
                         disease_trait_id = new_id.getvalue()
                         logging.info('Successfully added trait: ' + "'"+ trait +"'" + ' with PK: ' + str(disease_trait_id))
 
-                        # TODO: Add flag to test upload or commit
-                        cursor.execute('ROLLBACK')
+                        cursor.execute(database_action)
+                        if database_action == 'ROLLBACK':
+                            logging.info('Queries executed in testing mode. No commit action was performed.')
                 except cx_Oracle.DatabaseError as exception:
                     logging.error(exception)
 
