@@ -55,10 +55,6 @@ class ReportedTraitData:
 
             logging.info('reported_trait.csv created')
 
-    def _get_timestamp(self):
-        ''' Get timestamp of current date. '''
-        return date.today().strftime('%d-%m-%Y')
-
     def read_reported_trait_file(self, action):
         ''' Read in text file 
         
@@ -144,7 +140,7 @@ class ReportedTraitData:
 
     def insert_traits(self, traits):
         ''' Add traits to the database '''
-        logging.info('All traits to add: '+', '.join(traits))
+        logging.info('All traits to add: ' + ', '.join(traits))
 
         print(colored('Are you sure you want to add these traits to the Curation app production database? Options: yes, no', 'red', attrs=['bold']))
         confirm_action = input().strip().lower() or 'no' # leave a default for safety
@@ -160,20 +156,19 @@ class ReportedTraitData:
             logging.warning('Exiting... Confirmation did not match any of the expected values')
             sys.exit()
 
-        existing_traits = [''.join(trait[1].strip()) for trait in self.data]
-        traits_to_add = []
+
+        existing_traits = [''.join(trait[1].lower().strip()) for trait in self.data]
+        self.database_insert_trait_results = []
+
 
         # Check if any traits to be added currently exist in the database
         for trait in traits:
-            if trait in existing_traits:
+            if trait.lower() in existing_traits:
                 print('\n')
-                logging.info(trait+' already exists in database, skipping...')
+                logging.info(trait + ' already exists in database, skipping...')
+                self.database_insert_trait_results.append([trait, 'skip', 'NA'])
             else:
-                traits_to_add.append(trait)
                 insert_trait_sql = 'INSERT INTO DISEASE_TRAIT VALUES (NULL, ' + "'"+trait+"'" + ')'
-                # print('\n')
-                # logging.info(insert_trait_sql)
-
                 try:
                     with contextlib.closing(connection.cursor()) as cursor:
                         # Insert trait and return back the "id" primary key for the new row
@@ -181,17 +176,54 @@ class ReportedTraitData:
                         sql_event = insert_trait_sql + ' returning id into :new_id'
 
                         cursor.execute(sql_event, {'new_id': new_id})
-                        print(new_id.getvalue())
 
                         disease_trait_id = new_id.getvalue()
+
+                        print('\n')
                         logging.info('Successfully added trait: ' + "'"+ trait +"'" + ' with PK: ' + str(disease_trait_id))
+                        self.database_insert_trait_results.append([trait, 'add', str(disease_trait_id)])
 
                         cursor.execute(database_action)
-                        if database_action == 'ROLLBACK':
+                        if confirm_action == 'testing':
                             logging.info('Queries executed in testing mode. No commit action was performed.')
                 except cx_Oracle.DatabaseError as exception:
                     logging.error(exception)
 
+
+    def create_result_file(self, traits):
+        ''' Write file of results of "insert_traits()" results 
+
+        Args:
+            traits:
+                Array of user provided traits (already stripped of leading/trailing whitespace).
+        '''
+
+        existing_traits = [''.join(trait[1].lower().strip()) for trait in self.data]
+        user_provided_traits = [''.join(trait).lower() for trait in traits]
+        
+        # Create header summary information
+        traits_not_added = list(set(user_provided_traits) & set(existing_traits))
+        # print('Traits not added: ', len(traits_not_added), traits_not_added)
+        
+        num_traits_added = len(traits) - len(traits_not_added)
+        # print('Traits to be added: ', num_traits_added)
+
+        timestamp = _get_timestamp()
+        upload_report_filename = 'upload_report_filename_' + str(timestamp) +'.csv'
+
+        # Write output file
+        with open(upload_report_filename, "w", newline='') as csv_file:
+            writer = csv.writer(csv_file, delimiter=',')
+            writer.writerow(['Num traits added: '+str(num_traits_added), ' Num traits skipped: '+str(len(traits_not_added))])
+            writer.writerow(['Reported Trait', 'Action', 'PK (for developers)'])
+
+            for trait, action, pk in tqdm(self.database_insert_trait_results, desc='Creating result file'):
+                writer.writerow([trait, action, pk])
+
+
+def _get_timestamp():
+    ''' Get timestamp of current date. '''
+    return datetime.now().strftime('%d-%m-%Y_%H%M%S')
 
 
 if __name__ == '__main__':
@@ -258,3 +290,8 @@ if __name__ == '__main__':
 
         # Insert traits into the database
         all_reported_traits_obj.insert_traits(traits_to_add_to_database)
+
+        # Write out results of adding traits to database
+        all_reported_traits_obj.create_result_file(traits_to_add_to_database)
+
+
