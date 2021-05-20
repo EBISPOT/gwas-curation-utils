@@ -31,7 +31,7 @@ def get_curation_queue_data():
     curation_queue_data_sql = """
         SELECT DISTINCT (S.ID) AS STUDY_ID, TO_CHAR(H.STUDY_ADDED_DATE, 'yyyy-mm-dd'), P.PUBMED_ID, 
         A.FULLNAME, TO_CHAR(P.PUBLICATION_DATE, 'yyyy-mm-dd') AS Publication_Date, P.PUBLICATION, 
-        P.TITLE, S.USER_REQUESTED, S.FULL_PVALUE_SET, CS.STATUS, S.OPEN_TARGETS
+        P.TITLE, S.USER_REQUESTED, S.FULL_PVALUE_SET, CS.STATUS, S.OPEN_TARGETS, S.INITIAL_SAMPLE_SIZE, S.REPLICATE_SAMPLE_SIZE
         FROM STUDY S, HOUSEKEEPING H, PUBLICATION P, AUTHOR A, CURATION_STATUS CS
         WHERE S.HOUSEKEEPING_ID = H.ID AND H.IS_PUBLISHED = 0
           and S.PUBLICATION_ID=P.ID and P.FIRST_AUTHOR_ID=A.ID and H.CURATION_STATUS_ID=CS.ID
@@ -86,7 +86,8 @@ def get_curation_queue_data():
     curation_queue_attr_list = ['STUDY_ID', 'STUDY_CREATION_DATE', 'PUBMEDID', 'FIRST_AUTHOR', \
         'PUBLICATION_DATE', 'JOURNAL', 'TITLE', 'REPORTED_TRAIT', 'EFO_TRAIT', \
         'ASSOCIATION_COUNT', 'NUMBER_OF_INDIVIDUALS_INITIAL', 'NUMBER_OF_INDIVIDUALS_REPLICATION', \
-        'USER_REQUESTED?', 'FULL P-VALUE SET?', 'CURATION_STATUS', 'IS_OPEN_TARGETS?']
+        'USER_REQ$UESTED?', 'FULL P-VALUE SET?', 'CURATION_STATUS', 'IS_OPEN_TARGETS?', \
+        'INITIAL_SAMPLE_DESCRIPTION', 'REPLICATION_SAMPLE_DESCRIPTION']
 
     
     TIMESTAMP = get_timestamp()
@@ -136,7 +137,9 @@ def get_curation_queue_data():
 
                 curation_data.insert(15, data[10])
 
+                curation_data.insert(16, data[11])
 
+                curation_data.insert(17, data[12])
 
                 ##########################
                 # Get Reported Trait 
