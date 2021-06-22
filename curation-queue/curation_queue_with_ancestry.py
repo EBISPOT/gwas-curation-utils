@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
 
-def get_curation_queue_data(outdir=""):
+def get_curation_queue_data(outfile):
     '''
     Get Curation Queue data
     '''
@@ -92,10 +92,9 @@ def get_curation_queue_data(outdir=""):
     
     TIMESTAMP = get_timestamp()
 
-    filename = os.path.join(outdir, "data_queue_"+TIMESTAMP+".csv")
-    outfile = open(filename, "w")
+    file_handler = open(outfile, "w")
 
-    csvout = csv.writer(outfile)
+    csvout = csv.writer(file_handler)
 
     csvout.writerow(curation_queue_attr_list)
 
@@ -258,7 +257,7 @@ def send_email(file_name, email_list):
     me = 'spotbot@ebi.ac.uk'
     msg['Subject'] = 'GWAS Curation Queue '+datestamp
     msg['From'] = me
-    msg['To'] = ", ".join(you)
+    msg['To'] = ", ".join(email_list)
 
     # send the message via our own SMTP server, but don't include the
     # envelope header
@@ -281,14 +280,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     email_list = args.email
+    outfile = os.path.join(args.outdir, "data_queue_"+TIMESTAMP+".csv")
+    
 
     global DATABASE_NAME
     DATABASE_NAME = args.database
 
-    curation_queue_data = get_curation_queue_data(args.outdir)
+    curation_queue_data = get_curation_queue_data(outfile)
     
     # Email data to curators
     TIMESTAMP = get_timestamp()
-    report_filename = "data_queue_"+TIMESTAMP+".csv"
-    send_email(report_filename, email_list)
+    send_email(outfile, email_list)
 
