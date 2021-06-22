@@ -22,7 +22,7 @@ from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 
 
-def get_curation_queue_data():
+def get_curation_queue_data(outdir=""):
     '''
     Get Curation Queue data
     '''
@@ -91,7 +91,10 @@ def get_curation_queue_data():
 
     
     TIMESTAMP = get_timestamp()
-    outfile = open("data_queue_"+TIMESTAMP+".csv", "w")
+
+    filename = os.path.join(outdir, "data_queue_"+TIMESTAMP+".csv")
+    outfile = open(filename, "w")
+
     csvout = csv.writer(outfile)
 
     csvout.writerow(curation_queue_attr_list)
@@ -227,7 +230,7 @@ def get_timestamp():
     return timestamp
 
 
-def send_email(*args):
+def send_email(file_name, email_list):
     '''
     Email report file.
     '''
@@ -236,7 +239,6 @@ def send_email(*args):
     now = datetime.datetime.now()
     datestamp = str(now.day)+"_"+str(now.strftime("%b"))+"_"+str(now.year)
 
-    file_name = args[0]
 
     with open(file_name, "rb") as fil:
         part = MIMEApplication(
@@ -254,8 +256,6 @@ def send_email(*args):
 
     # create headers
     me = 'spotbot@ebi.ac.uk'
-    you = ['gwas-dev-logs@ebi.ac.uk', 'gwas-curator@ebi.ac.uk']
-    # you = ['twhetzel@ebi.ac.uk']
     msg['Subject'] = 'GWAS Curation Queue '+datestamp
     msg['From'] = me
     msg['To'] = ", ".join(you)
@@ -263,7 +263,7 @@ def send_email(*args):
     # send the message via our own SMTP server, but don't include the
     # envelope header
     s = smtplib.SMTP('localhost')
-    s.sendmail(me, you, msg.as_string())
+    s.sendmail(me, email_list, msg.as_string())
     s.quit()
 
 
@@ -276,15 +276,19 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--database', default='SPOTPRO', choices=['DEV3', 'SPOTPRO'], 
                         help='Run as (default: SPOTPRO).')
+    parser.add_argument('--outdir', help='Directory to write the oufile to', default="", required=False)
+    parser.add_argument('--email', help='Email address(es) to send report to', nargs='+', required=False)
     args = parser.parse_args()
+
+    email_list = args.email
 
     global DATABASE_NAME
     DATABASE_NAME = args.database
 
-    curation_queue_data = get_curation_queue_data()
+    curation_queue_data = get_curation_queue_data(args.outdir)
     
     # Email data to curators
     TIMESTAMP = get_timestamp()
     report_filename = "data_queue_"+TIMESTAMP+".csv"
-    send_email(report_filename)
+    send_email(report_filename, email_list)
 
