@@ -90,8 +90,6 @@ def get_curation_queue_data(outfile):
         'INITIAL_SAMPLE_DESCRIPTION', 'REPLICATION_SAMPLE_DESCRIPTION']
 
     
-    TIMESTAMP = get_timestamp()
-
     file_handler = open(outfile, "w")
 
     csvout = csv.writer(file_handler)
@@ -280,6 +278,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     email_list = args.email
+    TIMESTAMP = get_timestamp()
     outfile = os.path.join(args.outdir, "data_queue_"+TIMESTAMP+".csv")
     
 
@@ -289,6 +288,5 @@ if __name__ == '__main__':
     curation_queue_data = get_curation_queue_data(outfile)
     
     # Email data to curators
-    TIMESTAMP = get_timestamp()
     send_email(outfile, email_list)
 
